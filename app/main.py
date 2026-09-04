@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, field_validator
+from typing import List
 import uuid
 
 app = FastAPI(title="Victim Report API")
@@ -56,10 +57,16 @@ def create_report(report: ReportIn):
     return ReportOut(**record)
 
 
-app = FastAPI(title="Disaster Victim Monitor")
+@app.get("/reports", response_model=List[ReportOut])
+def list_reports(skip: int = Query(0, ge=0), limit: int = Query(10, ge=1, le=100)):
+    records = list(_db.values())
+    return [ReportOut(**r) for r in records[skip: skip + limit]]
 
 
-@app.get("/health")
-def health_check():
-    return {"status": "ok", "message": "Service is healthy"}
+@app.get("/reports/{report_id}", response_model=ReportOut)
+def get_report(report_id: str):
+    record = _db.get(report_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Report not found")
+    return ReportOut(**record)
 

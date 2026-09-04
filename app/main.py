@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+<<<<<<< HEAD
 from pydantic import BaseModel, field_validator
 import uuid
 
@@ -54,3 +55,12 @@ def create_report(report: ReportIn):
     record = {"id": str(uuid.uuid4()), "_internal_flag": False, **report.model_dump()}
     _db[record["id"]] = record
     return ReportOut(**record)
+=======
+
+app = FastAPI(title="Disaster Victim Monitor")
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "message": "Service is healthy"}
+>>>>>>> 76eba12c5a20c6210a4c09c14c445141a5b8b29a

@@ -1,22 +1,24 @@
- FastAPI Health App
+  Smart Disaster Management Web App - Triage System
 
-A simple health monitoring backend built with FastAPI for managing health-related data through APIs.
+Smart web app to prioritize disaster victims based on vital signs (Heart Rate, Temperature, BP) using Red/Yellow/Green triage logic.
 
- 🚀 Features
+Problem
+Existing systems share only location, not criticality. Rescue teams waste time.
 
-* ⚡ FastAPI Backend – Provides fast and efficient API services.
-* ❤️ Health Monitoring API – Handles health-related information and monitoring data.
-* 👤 Victim Data Management – Stores and manages individual health records.
-* 🔄 REST API Support – Enables easy communication between the frontend and backend.
+Solution
+Predict. Prioritize. Rescue. Recover.
+- Digitizes victim prioritization
+- Auto-analyzes vitals
+- Red = Critical (>120 HR), Yellow = Moderate, Green = Stable
+- Sends alert to rescue dashboard + hospital pre-alert
 
- 🛠️ Tech Stack
+Tech Stack
+Frontend: HTML, CSS, JavaScript
+Backend: Python (Flask)
+Database: SQLite / MySQL
+Future: Wearable + LoRa offline support
 
-* Python
-* FastAPI
-* Uvicorn
+How to Run
+python app.py
 
-📌 Purpose
-
-This project demonstrates how FastAPI can be used to build a lightweight backend for health monitoring and health-data management.
-
-
+Estimated Cost: Very Low (Open Source)

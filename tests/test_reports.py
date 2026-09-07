@@ -110,3 +110,82 @@ def test_404_after_db_is_empty():
     response = client.get("/reports/any-id")
     assert response.status_code == 404
 
+
+# --- partial updates validate fields ---
+
+def test_patch_single_field_updates_only_that_field():
+    report_id = _seed(1)[0]
+    original = client.get(f"/reports/{report_id}").json()
+    response = client.patch(f"/reports/{report_id}", json={"status": "found"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "found"
+    assert body["name"] == original["name"]  # untouched
+
+
+@pytest.mark.parametrize("bad_patch,expected_field", [
+    ({"name": ""},       "name"),
+    ({"age": -5},        "age"),
+    ({"age": 200},       "age"),
+    ({"location": " "}, "location"),
+    ({"status": "hurt"}, "status"),
+])
+def test_patch_invalid_field_returns_422(bad_patch, expected_field):
+    report_id = _seed(1)[0]
+    response = client.patch(f"/reports/{report_id}", json=bad_patch)
+    assert response.status_code == 422
+    fields = [e["loc"][-1] for e in response.json()["detail"]]
+    assert expected_field in fields
+
+
+def test_patch_empty_body_returns_400():
+    report_id = _seed(1)[0]
+    response = client.patch(f"/reports/{report_id}", json={})
+    assert response.status_code == 400
+
+
+def test_patch_missing_record_returns_404():
+    response = client.patch("/reports/nonexistent", json={"status": "found"})
+    assert response.status_code == 404
+
+
+# --- delete behavior is explicit ---
+
+def test_delete_removes_record_and_returns_200():
+    report_id = _seed(1)[0]
+    response = client.delete(f"/reports/{report_id}")
+    assert response.status_code == 200
+    assert response.json()["deleted"] == report_id
+    assert report_id not in _db
+
+
+def test_delete_missing_record_returns_404():
+    response = client.delete("/reports/nonexistent")
+    assert response.status_code == 404
+
+
+def test_delete_then_get_returns_404():
+    report_id = _seed(1)[0]
+    client.delete(f"/reports/{report_id}")
+    assert client.get(f"/reports/{report_id}").status_code == 404
+
+
+# --- database constraints remain valid ---
+
+def test_patch_does_not_corrupt_other_records():
+    id1, id2 = _seed(2)
+    client.patch(f"/reports/{id1}", json={"status": "found"})
+    assert _db[id2]["status"] == "missing"  # id2 untouched
+
+
+def test_delete_does_not_remove_other_records():
+    id1, id2 = _seed(2)
+    client.delete(f"/reports/{id1}")
+    assert id2 in _db
+
+
+def test_patch_preserves_internal_fields():
+    report_id = _seed(1)[0]
+    client.patch(f"/reports/{report_id}", json={"status": "found"})
+    assert "_internal_flag" in _db[report_id]  # internal field still in DB
+

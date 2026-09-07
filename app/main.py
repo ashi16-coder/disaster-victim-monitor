@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, field_validator
-from typing import List
+from typing import List, Optional
 import uuid
 
 app = FastAPI(title="Victim Report API")
@@ -37,6 +37,35 @@ class ReportIn(BaseModel):
         return v
 
 
+class ReportPatch(BaseModel):
+    name: Optional[str] = None
+    age: Optional[int] = None
+    location: Optional[str] = None
+    status: Optional[str] = None
+
+    @field_validator("name", "location")
+    @classmethod
+    def not_blank(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not v.strip():
+            raise ValueError("must not be blank")
+        return v.strip() if v else v
+
+    @field_validator("age")
+    @classmethod
+    def valid_age(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and (v < 0 or v > 120):
+            raise ValueError("must be between 0 and 120")
+        return v
+
+    @field_validator("status")
+    @classmethod
+    def valid_status(cls, v: Optional[str]) -> Optional[str]:
+        allowed = {"missing", "found", "deceased"}
+        if v is not None and v not in allowed:
+            raise ValueError(f"must be one of {allowed}")
+        return v
+
+
 class ReportOut(BaseModel):
     id: str
     name: str
@@ -69,4 +98,24 @@ def get_report(report_id: str):
     if not record:
         raise HTTPException(status_code=404, detail="Report not found")
     return ReportOut(**record)
+
+
+@app.patch("/reports/{report_id}", response_model=ReportOut)
+def patch_report(report_id: str, patch: ReportPatch):
+    record = _db.get(report_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Report not found")
+    updates = patch.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields provided")
+    record.update(updates)
+    return ReportOut(**record)
+
+
+@app.delete("/reports/{report_id}", status_code=200)
+def delete_report(report_id: str):
+    if report_id not in _db:
+        raise HTTPException(status_code=404, detail="Report not found")
+    del _db[report_id]
+    return {"deleted": report_id}
 

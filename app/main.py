@@ -64,7 +64,7 @@ class ReportPatch(BaseModel):
 
     @field_validator("age")
     @classmethod
-    def valid_age(cls, v: Optional[int]) -> Optional[int]:
+    def valid_age(cls, v: Optional[int]) -> Optonal[int]:
         if v is not None and (v < 0 or v > 120):
             raise ValueError("must be between 0 and 120")
         return v
